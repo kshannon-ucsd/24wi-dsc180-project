@@ -1,111 +1,140 @@
 # X-Ray Image Classification Project
 
-This project implements a Convolutional Neural Network (CNN) for classifying X-ray images as normal or abnormal.
+This project implements a deep learning pipeline for classifying X-ray images using a Convolutional Neural Network (CNN) architecture. The system is designed to process DICOM format medical images and provide binary classification results.
 
 ## Project Structure
 
-- `main.py`: Entry point of the application that orchestrates the entire training pipeline
-- `model.py`: Contains the CNN architecture definition and model building logic
-- `reload.py`: Handles data loading, preprocessing, and dataset preparation
-- `training.py`: Implements model training procedures and visualization utilities
-
-## Data Organization
-
-The project expects data to be organized in the following structure (excluded from version control):
-
 ```
-data/
-├── raw/
-│   ├── images/        # Directory containing toy dataset DICOM files
-│   ├── xray_imgs/     # Directory containing increased dataset DICOM files
-│   ├── toy.csv        # Metadata for toy dataset
-│   └── increased_toy.csv  # Metadata for increased dataset
-├── preprocessed/      # Directory for storing preprocessed data
-│   ├── train_metadata.csv
-│   └── test_metadata.csv
-└── output/           # Directory for storing model outputs and results
-    └── {dataset_name}_dataset/
-        ├── model.h5
-        └── training_history.png
+src/
+├── data/
+│   ├── preprocess.py      # Image preprocessing and normalization
+│   ├── split_data.py      # Dataset splitting utilities
+│   └── utilities.py       # Common data handling functions
+├── models/
+│   ├── train_model.py     # Model training pipeline
+│   └── evaluate_model.py  # Model evaluation and metrics
+├── visualization/
+│   └── plot_metrics.py    # Training history and results visualization
+└── __init__.py
 ```
 
-### Data Setup Instructions
+## Module Descriptions
 
-1. Create a `data` directory in the project root
-2. Inside `data`, create the following subdirectories:
-   - `raw/`: Store your original DICOM files and metadata
-   - `preprocessed/`: Will contain processed data (automatically generated)
-3. Place your DICOM files in the appropriate directory under `raw/`
-4. Ensure your metadata CSV files follow the required format:
-   - Column for image file paths
-   - Column for binary labels (normal/abnormal)
+### Data Processing (`src/data/`)
+
+The data processing modules handle all aspects of data preparation and management:
+
+- `preprocess.py`: Implements image preprocessing pipeline including:
+  - DICOM file loading and parsing
+  - Image normalization and standardization
+  - Resizing to model input dimensions
+  
+- `split_data.py`: Manages dataset organization:
+  - Train/validation/test set splitting
+  - Data augmentation configuration
+  - Metadata management
+
+- `utilities.py`: Provides common utility functions for:
+  - File handling and path management
+  - Data validation and error checking
+  - Batch processing helpers
+
+### Model Management (`src/models/`)
+
+The model modules implement the core machine learning functionality:
+
+- `train_model.py`: Defines and trains the CNN model:
+  - Model architecture configuration
+  - Training pipeline implementation
+  - Hyperparameter management
+  - Checkpoint handling
+
+- `evaluate_model.py`: Handles model evaluation:
+  - Performance metric calculation
+  - Results analysis and reporting
+  - Model validation procedures
+
+### Visualization (`src/visualization/`)
+
+- `plot_metrics.py`: Creates visualizations for:
+  - Training history plots
+  - Confusion matrices
+  - Performance metric graphs
+  - ROC curves and AUC scores
 
 ## Dependencies
 
-- TensorFlow (2.x)
-- NumPy
-- Pandas
-- Matplotlib
-- pydicom
+The project requires the following Python packages:
 
-## Module Details
+- TensorFlow (2.x) - Deep learning framework
+- NumPy - Numerical computing
+- Pandas - Data manipulation
+- Matplotlib - Plotting and visualization
+- scikit-learn - Machine learning utilities
+- pydicom - DICOM file handling
+- seaborn - Statistical visualization
 
-### main.py
-- Manages the overall training pipeline
-- Configures dataset selection (toy/increased/full dataset)
-- Handles directory creation and file organization
-- Coordinates data preparation, model training, and result saving
+## Data Organization
 
-### model.py
-- Implements a CNN architecture with three convolutional blocks
-- Features:
-  - L2 regularization for preventing overfitting
-  - Batch normalization for stable training
-  - Dropout layers for regularization
-  - Binary classification output
+The project data is organized into the following structure:
 
-### reload.py
-- Handles DICOM image preprocessing:
-  - Pixel value normalization
-  - Image resizing
-  - Channel dimension handling
-- Implements dataset splitting functionality
-- Provides data loading utilities
+```
+data/
+├── raw/                  # Original DICOM X-ray images
+│   ├── patient1/
+│   │   ├── study1.dcm
+│   │   └── study2.dcm
+│   └── patient2/
+│       └── study1.dcm
+├── preprocessed/         # Normalized and resized images
+│   ├── train/
+│   ├── validation/
+│   └── test/
+└── metadata.csv         # Image and patient information
+```
 
-### training.py
-- Manages model training process
-- Implements training history visualization
-- Handles model checkpointing and result saving
+### Raw Data
 
-## Usage
+- DICOM files (.dcm) containing original X-ray images
+- Organized by patient ID for easy access
+- Maintains original image quality and metadata
 
-1. Set up the data directory structure as described above
-2. Place your DICOM files and metadata in the appropriate directories
-3. Configure dataset selection in `main.py` (toy/increased)
-4. Run the training pipeline:
-   ```python
-   python main.py
-   ```
+### Preprocessed Data
 
-## Model Architecture
+- Normalized images in NumPy array format
+- Split into train/validation/test sets
+- Standardized dimensions: 224x224x1
+- Pixel values normalized to [0,1] range
 
-The CNN model consists of:
-- 3 Convolutional blocks with increasing filter sizes (32, 64, 128)
-- Batch normalization and dropout after each block
-- Dense layers with L2 regularization
-- Binary classification output with sigmoid activation
+### Metadata Structure
 
-## Data Preprocessing
+The metadata.csv file contains essential information about each image:
 
-Images are preprocessed by:
-1. Loading DICOM files
-2. Normalizing pixel values to [0,1] range
-3. Resizing to 224x224 pixels
-4. Adding channel dimension for model input
+| Column        | Description                           | Type    |
+|---------------|---------------------------------------|----------|
+| PatientID     | Unique patient identifier             | string  |
+| StudyID       | Unique study identifier               | string  |
+| DicomPath     | Path to DICOM file                    | string  |
+| ViewPosition  | X-ray view position (AP/PA/LATERAL)   | string  |
+| Abnormal      | Binary classification label           | boolean |
+| Age           | Patient age                           | integer |
+| Sex           | Patient sex                           | string  |
 
-## Note on Data Storage
 
-The `data/` directory is excluded from version control via `.gitignore` to avoid storing large files in the repository. When sharing this project, users should:
-1. Share the data separately through appropriate channels (e.g., secure file transfer, cloud storage)
-2. Document the data source and acquisition process
-3. Ensure all team members follow the same data organization structure
+## Training Process
+
+The model training pipeline includes several key features:
+
+1. Early stopping to prevent overfitting
+2. Model checkpointing to save best weights
+3. Training history visualization
+4. Comprehensive evaluation metrics
+
+## Results Storage
+
+All outputs are organized in the `results/` directory:
+
+- Trained model weights
+- Evaluation metrics in JSON format
+- Performance plots and visualizations
+- Detailed analysis reports
