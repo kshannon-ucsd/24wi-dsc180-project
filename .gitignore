@@ -7,6 +7,15 @@ __pycache__/
 # C extensions
 *.so
 
+# CSV files
+*.csv
+
+# Images
+*.png
+*.jpg
+*.dcm
+*.jpeg
+
 # Distribution / packaging
 .Python
 build/
