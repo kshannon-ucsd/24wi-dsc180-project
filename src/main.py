@@ -1,4 +1,11 @@
 import os
+import sys
+
+# Add src directory to Python path
+src_dir = os.path.dirname(os.path.abspath(__file__))
+if src_dir not in sys.path:
+    sys.path.append(src_dir)
+
 import numpy as np
 import pandas as pd
 import pydicom
@@ -7,27 +14,17 @@ from datetime import datetime
 
 from data.split_data import create_dataset_splits
 from models.train_model import create_model, train_model
+from models.evaluate_model import evaluate_model, save_evaluation_results
 from visualization.plot_metrics import plot_training_history
 
 def main():
     # Model and training configurations
     model_config = {
-        # Model architecture parameters - optimized for medical imaging
         'input_shape': (224, 224, 1),
-        'conv_filters': [8, 16, 32],  # Simplified filter progression
-        'dense_units': 32,  # Balanced dense layer capacity
-        'dropout_rates': [0.3, 0.3, 0.3],  # Consistent moderate dropout
-        'l2_reg': 0.01,  # Moderate L2 regularization
-        
-        # Training parameters - balanced for stability and learning
-        'learning_rate': 0.0005,  # Moderate learning rate
-        'batch_size': 16,  # Maintained for stable gradients
-        'epochs': 50,  # Increased to allow proper convergence
-        'validation_split': 0.2,
-        
-        # Early stopping parameters
-        'patience': 8,  # Increased patience for finding optimal weights
-        'min_delta': 0.001  # Refined improvement threshold
+        'batch_size': 16,
+        'epochs': 50,
+        'learning_rate': 0.0005,
+        'patience': 8
     }
     
     # Define base paths
@@ -84,101 +81,50 @@ def main():
     for df in [train_metadata, test_metadata]:
         df['Abnormal'] = df['Abnormal'].map({1.0: 1.0, -1.0: 0.0})
 
-    def load_dicom_image(dcm_path, target_size=(224, 224)):
-        ds = pydicom.dcmread(dcm_path)
-        img = ds.pixel_array.astype(np.float32)
-        img = img / np.max(img)
-        img = np.expand_dims(img, axis=-1)  # (H, W, 1)
-        img = tf.image.resize(img, target_size).numpy()
-        return img
-
-    def dicom_generator(df, batch_size=16, target_size=(224, 224)):
-        while True:
-            df_sample = df.sample(frac=1)
-            for start in range(0, len(df_sample), batch_size):
-                batch_df = df_sample.iloc[start:start+batch_size]
-                batch_images = []
-                batch_labels = []
-                for _, row in batch_df.iterrows():
-                    # Extract just the filename from the full path
-                    filename = os.path.basename(row['DicomPath'])
-                    # Construct the full path in the flat directory structure
-                    dicom_path = os.path.join(raw_images_dir, filename)
-                    label = row['Abnormal']
-
-                    img = load_dicom_image(dicom_path, target_size)
-                    batch_images.append(img)
-                    batch_labels.append(label)
-
-                yield np.array(batch_images), np.array(batch_labels)
-
-    # Create data generators
-    train_gen = dicom_generator(train_metadata, batch_size=model_config['batch_size'])
-    val_gen = dicom_generator(test_metadata, batch_size=model_config['batch_size'])
-
-    # Calculate steps per epoch
-    steps_per_epoch = len(train_metadata) // model_config['batch_size']
-    val_steps = len(test_metadata) // model_config['batch_size']
-
-    print(f"Training steps per epoch: {steps_per_epoch}")
-    print(f"Validation steps per epoch: {val_steps}")
+    # Create data generators using the DataGenerator class from utilities
+    from data.utilities import DataGenerator
     
-    # Print dataset information
-    print(f"Training batches: {steps_per_epoch}") # Using steps_per_epoch instead of len(train_gen)
-    print(f"Validation batches: {val_steps}") # Using val_steps instead of len(val_gen)
+    # Get unique view positions for one-hot encoding
+    unique_positions = metadata['ViewPosition'].unique()
+    num_positions = len(unique_positions)
     
-    # Build and train model
+    train_gen = DataGenerator(
+        data_dir=raw_images_dir,
+        metadata=train_metadata,
+        batch_size=model_config['batch_size'],
+        img_size=img_size,
+        num_positions=num_positions
+    )
+    
+    val_gen = DataGenerator(
+        data_dir=raw_images_dir,
+        metadata=test_metadata,
+        batch_size=model_config['batch_size'],
+        img_size=img_size,
+        num_positions=num_positions
+    )
+
+    # Build model
     print("Building and training model...")
     model = create_model(input_shape=model_config['input_shape'])
     
-    # Configure optimizer with specified learning rate
-    optimizer = tf.keras.optimizers.Adam(learning_rate=model_config['learning_rate'])
-    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
+    # Train the model
+    history = train_model(model, train_gen, val_gen,
+                         epochs=model_config['epochs'],
+                         batch_size=model_config['batch_size'],
+                         model_dir=output_dir)
     
-    # Configure callbacks
-    callbacks = [
-        tf.keras.callbacks.EarlyStopping(
-            monitor='val_loss',
-            patience=model_config['patience'],
-            min_delta=model_config['min_delta'],
-            restore_best_weights=True
-        ),
-        tf.keras.callbacks.ModelCheckpoint(
-            os.path.join(output_dir, 'best_model.h5'),
-            monitor='val_accuracy',
-            save_best_only=True
-        )
-    ]
+    # Plot and save training history
+    plot_training_history(history, 
+                         output_path=os.path.join(output_dir, 'plots', 'training_history.png'))
     
-    # Train with generators
-    history = model.fit(
-        train_gen,
-        validation_data=val_gen,
-        epochs=model_config['epochs'],
-        steps_per_epoch=steps_per_epoch,
-        validation_steps=val_steps,
-        verbose=1,
-        callbacks=callbacks
-    )
+    # Evaluate model on test data
+    evaluation_metrics = evaluate_model(model, val_gen)
     
-    # Save model and training history
-    print("\nSaving model and results...")
-    model.save(os.path.join(output_dir, 'model.h5'))
-    plot_training_history(history, output_dir)
+    # Save evaluation results
+    save_evaluation_results(evaluation_metrics, output_dir)
     
-    # Print final metrics
-    final_train_loss = history.history['loss'][-1]
-    final_train_acc = history.history['accuracy'][-1]
-    final_val_loss = history.history['val_loss'][-1]
-    final_val_acc = history.history['val_accuracy'][-1]
-    
-    print("\nFinal Training Metrics:")
-    print(f"Loss: {final_train_loss:.4f}")
-    print(f"Accuracy: {final_train_acc:.4f}")
-    print("\nFinal Validation Metrics:")
-    print(f"Loss: {final_val_loss:.4f}")
-    print(f"Accuracy: {final_val_acc:.4f}")
-    print(f"\nResults saved in: {output_dir}")
+    return model, history, evaluation_metrics
 
 if __name__ == '__main__':
     main()

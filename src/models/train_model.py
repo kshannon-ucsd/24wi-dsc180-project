@@ -17,32 +17,41 @@ def create_model(input_shape=(224, 224, 1)):
     Returns:
         tf.keras.Model: Configured model ready for training
     """
-    model = tf.keras.Sequential([
-        tf.keras.layers.Conv2D(8, 3, activation='relu', input_shape=input_shape),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.MaxPooling2D(),
-        tf.keras.layers.Dropout(0.3),
-        
-        tf.keras.layers.Conv2D(16, 3, activation='relu'),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.MaxPooling2D(),
-        tf.keras.layers.Dropout(0.3),
-        
-        tf.keras.layers.Conv2D(32, 3, activation='relu'),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.MaxPooling2D(),
-        tf.keras.layers.Dropout(0.3),
-        
-        tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(32, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
-        tf.keras.layers.Dropout(0.3),
-        tf.keras.layers.Dense(1, activation='sigmoid')
-    ])
+    # Define input layers
+    image_input = tf.keras.layers.Input(shape=input_shape, name='image_input')
+    position_input = tf.keras.layers.Input(shape=(2,), name='position_input')
+    
+    # Image processing branch with Global Average Pooling
+    x = tf.keras.layers.Conv2D(8, 3, activation='relu', padding='same')(image_input)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.MaxPooling2D()(x)
+    x = tf.keras.layers.Dropout(0.3)(x)
+    
+    x = tf.keras.layers.Conv2D(16, 3, activation='relu', padding='same')(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.MaxPooling2D()(x)
+    x = tf.keras.layers.Dropout(0.3)(x)
+    
+    x = tf.keras.layers.Conv2D(32, 3, activation='relu', padding='same')(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.GlobalAveragePooling2D()(x)
+    x = tf.keras.layers.Dropout(0.3)(x)
+    
+    # Combine image features with position data
+    combined = tf.keras.layers.Concatenate()([x, position_input])
+    
+    # Dense layers
+    x = tf.keras.layers.Dense(32, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01))(combined)
+    x = tf.keras.layers.Dropout(0.3)(x)
+    outputs = tf.keras.layers.Dense(1, activation='sigmoid')(x)
+    
+    # Create model
+    model = tf.keras.Model(inputs=[image_input, position_input], outputs=outputs)
     
     model.compile(
-        optimizer='adam',
-        loss='binary_crossentropy',
-        metrics=['accuracy']
+        optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+        loss=tf.keras.losses.BinaryCrossentropy(from_logits=False),
+        metrics=['accuracy', tf.keras.metrics.AUC(name='auc')]
     )
     
     return model
