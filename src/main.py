@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import tensorflow as tf
 from datetime import datetime
 
 from reload import prepare_dataset, load_dataset
@@ -7,16 +8,51 @@ from model import build_cnn_model
 from training import train_model, plot_training_history
 
 def main():
-    # Define paths
+    # Model and training configurations
+    model_config = {
+        # Model architecture parameters - optimized for medical imaging
+        'input_shape': (224, 224, 1),
+        'conv_filters': [8, 16, 32],  # Simplified filter progression
+        'dense_units': 32,  # Balanced dense layer capacity
+        'dropout_rates': [0.3, 0.3, 0.3],  # Consistent moderate dropout
+        'l2_reg': 0.01,  # Moderate L2 regularization
+        
+        # Training parameters - balanced for stability and learning
+        'learning_rate': 0.0005,  # Moderate learning rate
+        'batch_size': 16,  # Maintained for stable gradients
+        'epochs': 50,  # Increased to allow proper convergence
+        'validation_split': 0.2,
+        
+        # Early stopping parameters
+        'patience': 8,  # Increased patience for finding optimal weights
+        'min_delta': 0.001  # Refined improvement threshold
+    }
+    
+    # Define base paths
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     data_dir = os.path.join(base_dir, 'data')
     raw_data_dir = os.path.join(data_dir, 'raw')
-    raw_images_dir = os.path.join(raw_data_dir, 'images')
-    metadata_file = os.path.join(raw_data_dir, 'toy.csv')
+    
+    # Dataset configurations
+    dataset_configs = {
+        'toy': {
+            'metadata': os.path.join(raw_data_dir, 'toy.csv'),
+            'images': os.path.join(raw_data_dir, 'images')
+        },
+        'increased': {
+            'metadata': os.path.join(raw_data_dir, 'increased_toy.csv'),
+            'images': os.path.join(raw_data_dir, 'xray_imgs')
+        }
+    }
+    
+    # Select dataset (can be modified to use command line arguments)
+    selected_dataset = 'increased'  # Change to 'toy' for smaller dataset 
+    metadata_file = dataset_configs[selected_dataset]['metadata']
+    raw_images_dir = dataset_configs[selected_dataset]['images']
     
     # Create preprocessed and output directories
     preprocessed_dir = os.path.join(data_dir, 'preprocessed')
-    output_dir = os.path.join(base_dir, 'output', f'run_{datetime.now().strftime("%Y%m%d_%H%M%S")}')
+    output_dir = os.path.join(base_dir, 'output', f'{selected_dataset}_dataset')
     os.makedirs(preprocessed_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
     
@@ -31,26 +67,34 @@ def main():
     train_metadata.to_csv(train_metadata_path, index=False)
     test_metadata.to_csv(test_metadata_path, index=False)
     
-    # Load and preprocess image data
-    print("Loading and preprocessing images...")
-    img_size = (224, 224)
-    # Fix parameter order in load_dataset calls
-    X_train, y_train = load_dataset(raw_images_dir, train_metadata, img_size)
-    X_val, y_val = load_dataset(raw_images_dir, test_metadata, img_size)
+    # Create data generators
+    print("Setting up data generators...")
+    img_size = model_config['input_shape'][:2]
+    train_generator = load_dataset(raw_images_dir, train_metadata, img_size, model_config['batch_size'])
+    val_generator = load_dataset(raw_images_dir, test_metadata, img_size, model_config['batch_size'])
     
-    # Print shapes for debugging
-    print(f"X_train shape: {X_train.shape}, y_train shape: {y_train.shape}")
-    print(f"X_val shape: {X_val.shape}, y_val shape: {y_val.shape}")
+    # Print dataset information
+    print(f"Training batches: {len(train_generator)}")
+    print(f"Validation batches: {len(val_generator)}")
     
     # Build and train model
     print("Building and training model...")
-    model = build_cnn_model(input_shape=(*img_size, 1))
+    model = build_cnn_model(
+        input_shape=model_config['input_shape'],
+        learning_rate=model_config['learning_rate'],
+        conv_filters=model_config['conv_filters'],
+        dense_units=model_config['dense_units'],
+        dropout_rates=model_config['dropout_rates'],
+        l2_reg=model_config['l2_reg']
+    )
+    
+    # Train with generators
     history = model.fit(
-        X_train, y_train,
-        validation_data=(X_val, y_val),
-        batch_size=16,
-        epochs=10,
-        verbose=1
+        train_generator,
+        validation_data=val_generator,
+        epochs=model_config['epochs'],
+        verbose=1,
+        batch_size=model_config['batch_size']
     )
     
     # Save model and training history
