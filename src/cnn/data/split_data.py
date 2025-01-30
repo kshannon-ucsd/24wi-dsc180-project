@@ -45,7 +45,7 @@ def create_dataset_splits(metadata_path=None, metadata_df=None, train_size=0.8, 
     
     if output_dir is None:
         # Use default preprocessed directory
-        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
         output_dir = os.path.join(base_dir, 'data', 'preprocessed')
     
     # Save split datasets

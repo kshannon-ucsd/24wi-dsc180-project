@@ -5,17 +5,18 @@ This project implements a deep learning pipeline for classifying X-ray images us
 ## Project Structure
 
 ```
-src/
+src/cnn/
 ├── data/
 │   ├── preprocess.py      # Image preprocessing and normalization
 │   ├── split_data.py      # Dataset splitting utilities
 │   └── utilities.py       # Common data handling functions
 ├── models/
+│   ├── baseline/         # Baseline model implementations
 │   ├── train_model.py     # Model training pipeline
 │   └── evaluate_model.py  # Model evaluation and metrics
 ├── visualization/
 │   └── plot_metrics.py    # Training history and results visualization
-└── __init__.py
+└── main.py               # Main execution script
 ```
 
 ## Module Descriptions
@@ -81,30 +82,30 @@ The project data is organized into the following structure:
 ```
 data/
 ├── raw/                  # Original DICOM X-ray images
-│   ├── patient1/
-│   │   ├── study1.dcm
-│   │   └── study2.dcm
-│   └── patient2/
-│       └── study1.dcm
-├── preprocessed/         # Normalized and resized images
-│   ├── train/
-│   ├── validation/
-│   └── test/
-└── metadata.csv         # Image and patient information
+│   ├── increased_toy.csv # Metadata file containing image information
+│   └── xray_imgs/       # Directory containing DICOM images
+│       └── *.dcm        # DICOM image files
+└── preprocessed/        # Normalized and resized images
+    ├── train/           # Training set images
+    ├── validation/      # Validation set images
+    ├── test/            # Test set images
+    ├── train_metadata.csv # Training set metadata
+    └── test_metadata.csv  # Test set metadata
 ```
 
 ### Raw Data
 
-- DICOM files (.dcm) containing original X-ray images
-- Organized by patient ID for easy access
-- Maintains original image quality and metadata
+Raw data should be stored in the `data/raw/` directory at the project root. This includes:
+- The metadata file (`increased_toy.csv`) containing image information
+- DICOM image files in the `xray_imgs/` subdirectory
 
 ### Preprocessed Data
 
-- Normalized images in NumPy array format
-- Split into train/validation/test sets
-- Standardized dimensions: 224x224x1
-- Pixel values normalized to [0,1] range
+Preprocessed data is automatically saved in the `data/preprocessed/` directory, including:
+- Normalized and resized images split into train/validation/test sets
+- Generated metadata files for training and test sets
+
+Note: Make sure to place your raw DICOM images in the `data/raw/xray_imgs/` directory and the metadata file as `data/raw/increased_toy.csv` before running the pipeline.
 
 ### Metadata Structure
 
@@ -132,9 +133,9 @@ The model training pipeline includes several key features:
 
 ## Results Storage
 
-All outputs are organized in the `results/` directory:
+All outputs are organized in the `output/cnn/` directory:
 
-- Trained model weights
-- Evaluation metrics in JSON format
-- Performance plots and visualizations
-- Detailed analysis reports
+- Trained model weights (`best_model.h5`)
+- Evaluation metrics in JSON format (in `metrics/` subdirectory)
+- Performance plots and visualizations (in `plots/` subdirectory)
+- Detailed analysis reports (in `reports/` subdirectory)

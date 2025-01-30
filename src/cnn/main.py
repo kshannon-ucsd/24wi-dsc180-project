@@ -28,19 +28,20 @@ def main():
     }
     
     # Define base paths
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     data_dir = os.path.join(base_dir, 'data')
     raw_data_dir = os.path.join(data_dir, 'raw')
+    preprocessed_dir = os.path.join(data_dir, 'preprocessed')
     
     # Dataset configuration
     metadata_file = os.path.join(raw_data_dir, 'increased_toy.csv')
     raw_images_dir = os.path.join(raw_data_dir, 'xray_imgs')
     
     # Create preprocessed and output directories
-    preprocessed_dir = os.path.join(data_dir, 'preprocessed')
-    output_dir = os.path.join(base_dir, 'output', 'xray_dataset')
+    output_dir = os.path.join(base_dir, 'output', 'cnn')
     os.makedirs(preprocessed_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(os.path.join(output_dir, 'plots'), exist_ok=True)
     
     # Verify raw data directory structure
     if not os.path.exists(raw_images_dir):
@@ -53,8 +54,14 @@ def main():
     print("Loading and preparing dataset...")
     metadata = pd.read_csv(metadata_file)
     
-    # Split the dataset
+    # Split the dataset and save to preprocessed directory
     train_metadata, test_metadata = create_dataset_splits(metadata_file)
+    
+    # Save train and test metadata to preprocessed directory
+    train_metadata_path = os.path.join(preprocessed_dir, 'train_metadata.csv')
+    test_metadata_path = os.path.join(preprocessed_dir, 'test_metadata.csv')
+    train_metadata.to_csv(train_metadata_path, index=False)
+    test_metadata.to_csv(test_metadata_path, index=False)
     # Define image size for processing
     img_size = (224, 224)  # Set target size for image processing
     
