@@ -55,4 +55,5 @@ CREATE VIEW subset AS(
 	FROM infection_time
 );
 
+--- Store data into csv
 \copy (SELECT * FROM subset) TO '../data/interim/subset.csv' WITH DELIMITER ',' CSV HEADER
