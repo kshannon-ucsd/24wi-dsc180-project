@@ -88,7 +88,6 @@ data/
 │       └── study1.dcm
 ├── preprocessed/         # Normalized and resized images
 │   ├── train/
-│   ├── validation/
 │   └── test/
 └── metadata.csv         # Image and patient information
 ```
