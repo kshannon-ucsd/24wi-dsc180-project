@@ -78,7 +78,7 @@ def main():
                                                                         "dicom_id", "DicomPath", "Abnormal", "los", 
                                                                         "chronic_pulmonary_disease", "sepsis3"]]
 
-    complete_merged.to_csv("../data/processed/complete_merged.csv")
+    complete_merged.to_csv("../data/processed/complete_merged.csv", index = False)
 
 if __name__ == "__main__":
     main()
