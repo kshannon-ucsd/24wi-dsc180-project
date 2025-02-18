@@ -6,8 +6,8 @@ This repository contains code for the Winter 2025 DSC 180 capstone project, ment
 
 ### `data/`
 Contains all datasets used in the project.
-- **`raw/`** – Holds unprocessed X-ray images.
-- **`processed/`** – Holds preprocessed images:
+- **`raw/`** – Holds all data collected externally (includes unprocessed X-ray images).
+- **`processed/`** – Holds preprocessed data (ready to be used by models):
   - Training images are resized to 224x224 pixels, slightly tilted, contrast-adjusted, and some are flipped horizontally.
   - Validation and test images are also stored here.
 - **`sql-data/`** – Contains `.csv` results from SQL queries.
@@ -42,12 +42,6 @@ To run the full pipeline:
 python main.py
 ```
 
-## Dependencies
-Ensure you have the required Python libraries installed:
-```bash
-pip install -r requirements.txt
-```
-
-## Authors & Mentorshipu
+## Authors & Mentorship
 - **Mentor:** Kyle Shannon
 - **Capstone Project:** DSC 180 Winter 2025
