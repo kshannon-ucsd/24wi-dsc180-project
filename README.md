@@ -12,6 +12,9 @@ Contains all datasets used in the project.
   - Validation and test images are also stored here.
 - **`sql-data/`** – Contains `.csv` results from SQL queries.
 
+### `plots/`
+A container to save all visualizations.
+
 ### `src/`
 Contains all source code related to data processing, modeling, and evaluation.
 - **`etl/`** – Scripts for data preprocessing:
