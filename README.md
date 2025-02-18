@@ -21,6 +21,9 @@ Contains all source code related to data processing, modeling, and evaluation.
   - Loading and preprocessing data.
   - Building and training models.
   - Evaluating model performance with metrics.
+- **`models/`** - python files specifying model architecture and training process
+  - ResNet50 Transfer Learning X-Ray Classifier
+  - Sepsis Risk Assessment
 - **`visualization/`** – Scripts for generating plots:
   - Classification metrics.
   - Loss and accuracy curves.
