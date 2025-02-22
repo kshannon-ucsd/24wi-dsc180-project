@@ -16,11 +16,7 @@ __pycache__/
 *.dcm
 *.jpeg
 
-*.csv
 *.dicom
-*.dcm
-*.jpeg
-*.png
 
 # Distribution / packaging
 .Python
