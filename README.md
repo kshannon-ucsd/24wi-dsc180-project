@@ -1,7 +1,7 @@
 # dsc180-central-code
 
 
-kshannon-ucsd.github.io/24wi-dsc180-profile/
+<https://kshannon-ucsd.github.io/24wi-dsc180-profile/>
 
 This repository contains code for the Winter 2025 DSC 180 capstone project, mentored by Kyle Shannon. The project focuses on building a machine learning tool with a front-facing website that processes X-ray data and patient biomarkers to predict sepsis development.
 
