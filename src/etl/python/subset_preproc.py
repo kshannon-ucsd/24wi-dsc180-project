@@ -53,6 +53,9 @@ def main():
     segmented = pd.read_csv("../data/external/CXLSeg-segmented.csv")
     xray = pd.read_csv("../data/external/mimic-cxr-2.0.0-metadata.csv")
 
+    #added pneumonia feature
+    pneumonia = pd.read_csv("../data/external/second_features.csv")
+
     # Preprocessing data
     subset["admittime"] = subset["admittime"].apply(convert_datetime)
     subset["dischtime"] = subset["dischtime"].apply(convert_datetime)
@@ -78,7 +81,35 @@ def main():
                                                                         "dicom_id", "DicomPath", "Abnormal", "los", 
                                                                         "chronic_pulmonary_disease", "sepsis3"]]
 
-    complete_merged.to_csv("../data/processed/complete_merged.csv", index = False)
+    # complete_merged.to_csv("../data/processed/complete_merged.csv", index = False)
+
+
+    #data preprocessing for model
+    pneu = pneumonia[pneumonia['subject_id'].notna()]
+    recents = pneu.sort_values(['subject_id', 'hadm_id', 'stay_id', 'charttime']).groupby(['subject_id', 'hadm_id', 'stay_id']).tail(1)
+
+
+
+    recents = recents.reset_index().drop(columns = 'index')
+
+
+    means = pneu.groupby(['subject_id', 'hadm_id', 'stay_id'])[['heart_rate', 'sbp',
+        'sbp_ni', 'mbp', 'mbp_ni', 'resp_rate', 'temperature', 'platelet',
+        'wbc', 'bands', 'lactate', 'inr', 'ptt', 'creatinine', 'bilirubin']].mean().reset_index()
+
+
+    feat_squeeze = recents.combine_first(means)
+
+    full_data = subset.merge(feat_squeeze, how = 'left', on = ['subject_id', 'hadm_id', 'stay_id'])
+
+    complete_merged = complete_merged[['subject_id', 'hadm_id', 'stay_id', 'Abnormal']].drop_duplicates(['subject_id', 'hadm_id', 'stay_id'])
+
+    full_data = full_data.merge(complete_merged, on = ['subject_id', 'hadm_id', 'stay_id'])
+
+    full_data.to_csv("../data/processed/full_data.csv", index = False)
+
+
+
 
 if __name__ == "__main__":
     main()
