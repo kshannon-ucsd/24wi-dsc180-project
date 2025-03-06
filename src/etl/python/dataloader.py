@@ -1,4 +1,3 @@
-# data_loader.py
 import os
 import boto3
 import tensorflow as tf

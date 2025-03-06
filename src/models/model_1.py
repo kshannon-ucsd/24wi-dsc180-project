@@ -1,4 +1,3 @@
-# model.py
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, BatchNormalization, Activation, Dropout
 from tensorflow.keras.applications import ResNet50V2
