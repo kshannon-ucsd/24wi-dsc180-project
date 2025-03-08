@@ -1,7 +1,7 @@
-DROP VIEW IF EXISTS raw_model2;
+DROP VIEW IF EXISTS second_feature;
 
 -- Create view to export data
-CREATE VIEW raw_model2 AS(
+CREATE VIEW second_feature AS(
     -- Obtain necessary vital signs for sepsis diagnosis
     WITH vitals AS (
         SELECT v.subject_id, v.stay_id, v.charttime, v.heart_rate, v.sbp, v.sbp_ni, v.mbp, v.mbp_ni, v.resp_rate, v.temperature
@@ -66,6 +66,18 @@ CREATE VIEW raw_model2 AS(
         WHERE b1.subject_id IS NOT NULL AND b1.hadm_id IS NOT NULL
     ),
 
+    --- Obtain pneumonia indicator
+	pneumonia AS (
+		SELECT d.subject_id, d.hadm_id, 1 AS pneumonia
+		FROM mimiciv_hosp.diagnoses_icd AS d
+		JOIN (
+			SELECT i.icd_code
+			FROM mimiciv_hosp.d_icd_diagnoses AS i
+			WHERE LOWER(long_title) LIKE '%pneumonia%'
+		) AS p ON d.icd_code = p.icd_code
+		WHERE d.subject_id IS NOT NULL AND d.hadm_id IS NOT NULL
+	),
+
     --- Merge vitals and blood measurements together
     vitals_blood AS (
         SELECT v.subject_id, b.hadm_id, v.stay_id, v.charttime, v.heart_rate, v.sbp, v.sbp_ni, v.mbp, v.mbp_ni, v.resp_rate, v.temperature, b.platelet, b.wbc
@@ -106,12 +118,19 @@ CREATE VIEW raw_model2 AS(
         SELECT v.subject_id, v.hadm_id, v.stay_id, v.charttime, v.heart_rate, v.sbp, v.sbp_ni, v.mbp, v.mbp_ni, v.resp_rate, v.temperature, v.platelet, v.wbc, v.bands, v.lactate, v.inr, v.ptt, v.creatinine, b.bilirubin
         FROM merge_creatinine AS v
         FULL JOIN bilirubin AS b ON v.subject_id = b.subject_id AND v.hadm_id = b.hadm_id AND v.charttime = b.charttime
+    ),
+
+    --- Merge previous with pneumonia indicator
+	merge_pneumonia AS (
+        SELECT v.subject_id, v.hadm_id, v.stay_id, v.charttime, v.heart_rate, v.sbp, v.sbp_ni, v.mbp, v.mbp_ni, v.resp_rate, v.temperature, v.platelet, v.wbc, v.bands, v.lactate, v.inr, v.ptt, v.creatinine, v.bilirubin, COALESCE(p.pneumonia, 0) AS pneumonia 
+        FROM merge_bilirubin AS v
+        FULL JOIN pneumonia AS p ON v.subject_id = p.subject_id AND v.hadm_id = p.hadm_id
     )
 
     SELECT *
-    FROM merge_bilirubin
+    FROM merge_pneumonia
     WHERE hadm_id IS NOT NULL
 );
 
 --- Store data into csv
-\copy (SELECT * FROM raw_model2) TO '../data/interim/raw_model2.csv' WITH DELIMITER ',' CSV HEADER
+\copy (SELECT * FROM second_feature) TO '../../../data/sql-data/second_feature.csv' WITH DELIMITER ',' CSV HEADER

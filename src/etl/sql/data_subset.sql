@@ -56,4 +56,4 @@ CREATE VIEW subset AS(
 );
 
 --- Store data into csv
-\copy (SELECT * FROM subset) TO '../data/interim/subset.csv' WITH DELIMITER ',' CSV HEADER
+\copy (SELECT * FROM subset) TO '../../../data/sql-data/subset.csv' WITH DELIMITER ',' CSV HEADER
