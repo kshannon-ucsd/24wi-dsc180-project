@@ -27,7 +27,7 @@ def main():
     # Sepsis Detection Model
     print("Loading Data...")
     metadata = pd.read_csv('data/sql-data/patients_metadata.csv')
-    sepsis = pd.read_csv('data/sql-data/sepsis.csv')
+    sepsis = pd.read_csv('data/sql-data/sepsis.csv', low_memory=False)
     print('Data Loaded Successfully', end='\n\n\n')
     
     # Preprocess and Combine Data

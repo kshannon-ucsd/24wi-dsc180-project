@@ -96,6 +96,8 @@ def probabilistic_imputation(df, seed=42):
                         size=n_missing,
                         replace=True)
                     
+    imputed_df.to_csv("data/processed/imputed_metadata.csv")
+    
     print("====================================")
     print(f'Total number of imputed columns: {len(df.columns) - 1}')
     

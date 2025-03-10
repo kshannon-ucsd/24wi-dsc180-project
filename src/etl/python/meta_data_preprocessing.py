@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 def metadata_preprocessing(metadata, sepsis):
     metadata = metadata[metadata['subject_id'].notna()]
@@ -73,5 +74,6 @@ def metadata_preprocessing(metadata, sepsis):
     full_data['sepsis3'] = np.where(full_data['sepsis3'] == 't', 1, 0)
     full_data['sepsis3'] = full_data['sepsis3'].astype(int)
     full_data = full_data.rename(columns={'sepsis3': 'sepsis'}, inplace=False)
+    full_data.to_csv("data/processed/full_metadata.csv")
     
     return full_data
