@@ -53,8 +53,7 @@ def convert_datetime(input_date):
 def main():
     # Loading in data
     subset = pd.read_csv("../data/external/subset.csv")
-    segmented = pd.read_csv("../data/external/CXLSeg-segmented.csv")
-    xray = pd.read_csv("../data/external/mimic-cxr-2.0.0-metadata.csv")
+
 
     #added pneumonia feature
     pneumonia = pd.read_csv("../data/external/second_features.csv")
@@ -62,52 +61,33 @@ def main():
     # Preprocessing data
     subset["admittime"] = subset["admittime"].apply(convert_datetime)
     subset["dischtime"] = subset["dischtime"].apply(convert_datetime)
-    xray = xray.assign(formatted_date = xray["StudyDate"].apply(date_format))
-    xray = xray.assign(formatted_time = xray["StudyTime"].apply(time_format))
-    xray = xray.assign(studytime = (xray["formatted_date"] + " " + xray["formatted_time"]).apply(convert_datetime))
 
-    # Merging
-    # Subsetting xray dataset to make merge more efficient
-    xray_merge = xray[["subject_id", "study_id", "ViewPosition", "studytime"]]
-    # First merge
-    merging = subset.merge(xray_merge, left_on = "subject_id", right_on = "subject_id")
-    # Matching each xray to hospital admission
-    matched_dates = merging[(merging["studytime"] >= merging["admittime"]) & (merging["studytime"] <= merging["dischtime"])].reset_index(drop = True)
-    # Preprocessing segmented for merging
-    segmented_merged = segmented[["subject_id", "study_id", "dicom_id", "DicomPath", "No Finding"]]
-    segmented_merged["No Finding"] = segmented_merged["No Finding"].fillna(-1)
-    segmented_merged["Abnormal"] = (segmented_merged["No Finding"] * -1)
-    segmented_merged = segmented_merged.drop(columns = ["No Finding"])
-    # Final merge
-    complete_merged = matched_dates.merge(segmented_merged, on = ["subject_id", "study_id"])[["subject_id", "hadm_id", "stay_id", "study_id", 
-                                                                        "admittime", "dischtime", "studytime", "ViewPosition",
-                                                                        "dicom_id", "DicomPath", "Abnormal", "los", 
-                                                                        "chronic_pulmonary_disease", "sepsis3"]]
 
+    
     # complete_merged.to_csv("../data/processed/complete_merged.csv", index = False)
 
 
     #data preprocessing for model
     pneu = pneumonia[pneumonia['subject_id'].notna()]
+
+    pneu = pneu[['subject_id', 'charttime','hadm_id', 'stay_id','heart_rate', 'sbp',
+        'sbp_ni', 'mbp', 'mbp_ni', 'resp_rate', 'temperature', 'platelet',
+        'wbc', 'bands', 'lactate', 'inr', 'ptt', 'creatinine', 'bilirubin', 'pneumonia']]
     recents = pneu.sort_values(['subject_id', 'hadm_id', 'stay_id', 'charttime']).groupby(['subject_id', 'hadm_id', 'stay_id']).tail(1)
 
 
 
     recents = recents.reset_index().drop(columns = 'index')
-
+    recents.iloc[0]
 
     means = pneu.groupby(['subject_id', 'hadm_id', 'stay_id'])[['heart_rate', 'sbp',
         'sbp_ni', 'mbp', 'mbp_ni', 'resp_rate', 'temperature', 'platelet',
-        'wbc', 'bands', 'lactate', 'inr', 'ptt', 'creatinine', 'bilirubin']].mean().reset_index()
-
+        'wbc', 'bands', 'lactate', 'inr', 'ptt', 'creatinine', 'bilirubin','pneumonia']].mean().reset_index()
 
     feat_squeeze = recents.combine_first(means)
 
     full_data = subset.merge(feat_squeeze, how = 'left', on = ['subject_id', 'hadm_id', 'stay_id'])
 
-    complete_merged = complete_merged[['subject_id', 'hadm_id', 'stay_id', 'Abnormal']].drop_duplicates(['subject_id', 'hadm_id', 'stay_id'])
-
-    full_data = full_data.merge(complete_merged, on = ['subject_id', 'hadm_id', 'stay_id'])
 
     full_data.to_csv("../data/processed/full_data.csv", index = False)
 
