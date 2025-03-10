@@ -4,7 +4,6 @@ import tensorflow as tf
 import cv2
 import pandas as pd
 import numpy as np
-from tensorflow.keras.applications.resnet50 import preprocess_input
 from PIL import Image
 
 # S3 Configuration
@@ -18,7 +17,7 @@ def preprocess_img(img, img_size=256, crop_size=224, is_train=True):
         img = tf.image.random_flip_left_right(img)
         img = tf.image.random_brightness(img, max_delta=0.25)
         img = tf.image.random_contrast(img, lower=0.75, upper=1.25)
-    img = preprocess_input(img)
+    img = tf.keras.applications.resnet50.preprocess_input(img)
     return img
 
 def download_and_preprocess_data(local_raw_path, local_processed_path):

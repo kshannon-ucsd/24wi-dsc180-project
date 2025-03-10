@@ -18,6 +18,8 @@ __pycache__/
 
 *.dicom
 
+catboost_info/
+
 # Distribution / packaging
 .Python
 build/

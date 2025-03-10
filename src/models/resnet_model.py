@@ -24,6 +24,6 @@ def pneumonia_detection_model(train_generator, val_generator):
     
     model.fit(train_generator, validation_data=val_generator, epochs=100, callbacks=callbacks)
     
-    model.save('best_model_1.keras')
+    # model.save('best_model_1.keras')
     
     return model
