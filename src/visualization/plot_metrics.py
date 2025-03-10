@@ -1,54 +1,12 @@
-"""Module for visualizing model metrics and training results.
-
-This module provides functions for creating plots and visualizations of model performance.
-"""
-
-import os
 import matplotlib.pyplot as plt
 import seaborn as sns
-import numpy as np
+from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score, precision_recall_curve
 
-def plot_training_history(history, output_path=None):
-    """Plot training and validation metrics over epochs.
-
-    Args:
-        history (dict): Training history from model.fit()
-        output_path (str, optional): Path to save the plot
+def plot_confusion_matrix(y_true, y_pred, mdl_name='catboost'):
     """
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
-    
-    # Plot accuracy
-    ax1.plot(history['accuracy'], label='Training')
-    ax1.plot(history['val_accuracy'], label='Validation')
-    ax1.set_title('Model Accuracy')
-    ax1.set_xlabel('Epoch')
-    ax1.set_ylabel('Accuracy')
-    ax1.legend()
-    
-    # Plot loss
-    ax2.plot(history['loss'], label='Training')
-    ax2.plot(history['val_loss'], label='Validation')
-    ax2.set_title('Model Loss')
-    ax2.set_xlabel('Epoch')
-    ax2.set_ylabel('Loss')
-    ax2.legend()
-    
-    plt.tight_layout()
-    
-    if output_path:
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        plt.savefig(output_path)
-        plt.close()
-    else:
-        plt.show()
-
-def plot_confusion_matrix(conf_matrix, output_path=None):
-    """Plot confusion matrix as a heatmap.
-
-    Args:
-        conf_matrix (numpy.ndarray): Confusion matrix
-        output_path (str, optional): Path to save the plot
+    Plot confusion matrix as a heatmap.
     """
+    conf_matrix = confusion_matrix(y_true, y_pred)
     plt.figure(figsize=(8, 6))
     sns.heatmap(
         conf_matrix,
@@ -61,36 +19,57 @@ def plot_confusion_matrix(conf_matrix, output_path=None):
     plt.title('Confusion Matrix')
     plt.xlabel('Predicted')
     plt.ylabel('True')
-    
-    if output_path:
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        plt.savefig(output_path)
-        plt.close()
-    else:
-        plt.show()
+    plt.savefig(f'plots/{mdl_name}_confusion_matrix.png')
+    plt.show()
 
-def plot_roc_curve(fpr, tpr, roc_auc, output_path=None):
-    """Plot ROC curve with AUC score.
 
-    Args:
-        fpr (array-like): False positive rates
-        tpr (array-like): True positive rates
-        roc_auc (float): Area under the ROC curve
-        output_path (str, optional): Path to save the plot
+def plot_roc_curves(model, X_train, y_train, X_test, y_test, mdl_name='catboost'):
     """
-    plt.figure(figsize=(8, 6))
-    plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {roc_auc:.2f})')
-    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
+    Plot ROC curves for both training and test sets
+    """
+    # Get probabilities
+    y_train_proba = model.predict_proba(X_train)[:, 1]
+    y_test_proba = model.predict_proba(X_test)[:, 1]
+
+    # Calculate ROC curve
+    fpr_train, tpr_train, _ = roc_curve(y_train, y_train_proba)
+    fpr_test, tpr_test, _ = roc_curve(y_test, y_test_proba)
+
+    # Calculate AUC
+    auc_train = roc_auc_score(y_train, y_train_proba)
+    auc_test = roc_auc_score(y_test, y_test_proba)
+
+    # Plot ROC curve
+    plt.figure(figsize=(10, 6))
+    plt.plot(fpr_train, tpr_train, label=f'Train AUC: {auc_train:.3f}')
+    plt.plot(fpr_test, tpr_test, label=f'Test AUC: {auc_test:.3f}')
+    plt.plot([0, 1], [0, 1], 'k--')
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('Receiver Operating Characteristic (ROC) Curve')
-    plt.legend(loc='lower right')
+    plt.title('ROC Curve')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(f'plots/{mdl_name}_roc_curves.png')
+    plt.show()
+
+def plot_precision_recall(model, X_train, y_train, X_test, y_test, mdl_name='catboost'):
+    """
+    Plot Precision-Recall curves for both training and test sets
+    """
+    y_train_proba = model.predict_proba(X_train)[:, 1]
+    y_test_proba = model.predict_proba(X_test)[:, 1]
     
-    if output_path:
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        plt.savefig(output_path)
-        plt.close()
-    else:
-        plt.show()
+    precision_train, recall_train, _ = precision_recall_curve(y_train, y_train_proba)
+    precision_test, recall_test, _ = precision_recall_curve(y_test, y_test_proba)
+
+    # Plot Precision-Recall curve
+    plt.figure(figsize=(10, 6))
+    plt.plot(recall_train, precision_train, label='Train')
+    plt.plot(recall_test, precision_test, label='Test')
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.title('Precision-Recall Curve')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(f'plots/{mdl_name}_precision_recall_curve.png')
+    plt.show()

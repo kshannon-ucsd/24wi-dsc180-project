@@ -2,7 +2,7 @@ DROP VIEW IF EXISTS subset;
 
 -- Create view to export data
 CREATE VIEW subset AS(
-	-- Identify if patient has chronic pulmonary disease
+	-- Chronic pulmonary disease feature
 	WITH pulmonary AS (
 		SELECT c.subject_id, c.hadm_id, c.chronic_pulmonary_disease
 		FROM mimiciv_derived.charlson AS c
@@ -56,4 +56,4 @@ CREATE VIEW subset AS(
 );
 
 --- Store data into csv
-\copy (SELECT * FROM subset) TO '../data/interim/subset.csv' WITH DELIMITER ',' CSV HEADER
+\copy (SELECT * FROM subset) TO 'data/sql-data/sepsis.csv' WITH DELIMITER ',' CSV HEADER
