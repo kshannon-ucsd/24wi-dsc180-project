@@ -1,3 +1,10 @@
+"""
+This module provides visualization and interpretation tools for
+CatBoost model predictions. It includes functions for plotting feature
+importance, permutation importance, partial dependence, SHAP values,
+calibration curves, and learning curves to help understand model
+behavior and performance.
+"""
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -28,14 +35,22 @@ def plot_feature_importance(model, feature_names, top_n=20):
     sns.barplot(x='Importance', y='Feature', data=importance_df.head(top_n))
     plt.title('CatBoost Feature Importance')
     plt.tight_layout()
-    plt.savefig(f'catboost_feature_importance_plot.png')
+    plt.savefig('catboost_feature_importance_plot.png')
     plt.show()
 
     return importance_df
 
 
-# 2. Permutation Importance (alternative measure that shows feature impact on performance)
-def plot_permutation_importance(model, X_test, y_test, feature_names, top_n=20, n_repeats=10):
+# 2. Permutation Importance (alternative measure that shows feature impact
+# on performance)
+def plot_permutation_importance(
+    model,
+    X_test,
+    y_test,
+    feature_names,
+    top_n=20,
+    n_repeats=10
+):
     """
     Calculate and plot permutation importance for features
     """
@@ -52,17 +67,27 @@ def plot_permutation_importance(model, X_test, y_test, feature_names, top_n=20, 
 
     # Plot top N features
     plt.figure(figsize=(10, 8))
-    sns.barplot(x='Importance', y='Feature', data=perm_importance_df.head(top_n))
+    sns.barplot(
+        x='Importance',
+        y='Feature',
+        data=perm_importance_df.head(top_n)
+    )
     plt.title('Permutation Feature Importance')
     plt.tight_layout()
-    plt.savefig(f'catboost_permutation_importance_plot.png')
+    plt.savefig('catboost_permutation_importance_plot.png')
     plt.show()
 
     return perm_importance_df
 
 
 # 3. Partial Dependence Plots (shows how a feature affects predictions)
-def plot_partial_dependence(model, X, feature_names, feature_idx, grid_resolution=50):
+def plot_partial_dependence(
+    model,
+    X,
+    feature_names,
+    feature_idx,
+    grid_resolution=50
+):
     """
     Create partial dependence plot for a specific feature
     """
@@ -92,7 +117,7 @@ def plot_partial_dependence(model, X, feature_names, feature_idx, grid_resolutio
     plt.ylabel('Predicted probability')
     plt.title(f'Partial Dependence Plot: {feature_names[feature_idx]}')
     plt.grid(True)
-    plt.savefig(f'catboost_partial_dependence_plot.png')
+    plt.savefig('catboost_partial_dependence_plot.png')
     plt.show()
 
 
@@ -119,25 +144,32 @@ def plot_shap_values(model, X, feature_names, sample_size=100):
     # Summary plot
     plt.figure(figsize=(10, 8))
     shap.summary_plot(shap_values, X_sample, feature_names=feature_names)
-    plt.savefig(f'catboost_shap_summary_plot.png')
-    
+    plt.savefig('catboost_shap_summary_plot.png')
+
     # Dependence plots for top features
     importance = np.abs(shap_values).mean(0)
     indices = np.argsort(importance)
 
     for idx in indices:
         plt.figure(figsize=(8, 6))
-        shap.dependence_plot(idx, shap_values, X_sample, feature_names=feature_names)
-        plt.savefig(f'catboost_{feature_names[idx]}_shap_dependence_plot.png')
+        shap.dependence_plot(
+            idx,
+            shap_values,
+            X_sample,
+            feature_names=feature_names
+        )
+        plt.savefig(
+            f'catboost_{feature_names[idx]}_shap_dependence_plot.png'
+        )
 
     return explainer, shap_values
-
 
 
 # 6. Model calibration plot
 def plot_calibration_curve(model, X_train, y_train, X_test, y_test, n_bins=10):
     """
-    Plot calibration curve to check if predicted probabilities match observed frequencies
+    Plot calibration curve to check if predicted probabilities match observed
+    frequencies
     """
     y_train_proba = model.predict_proba(X_train)[:, 1]
     y_test_proba = model.predict_proba(X_test)[:, 1]
@@ -155,8 +187,14 @@ def plot_calibration_curve(model, X_train, y_train, X_test, y_test, n_bins=10):
 
         return prob_true, prob_pred
 
-    prob_true_train, prob_pred_train = calculate_calibration(y_train, y_train_proba, n_bins)
-    prob_true_test, prob_pred_test = calculate_calibration(y_test, y_test_proba, n_bins)
+    prob_true_train, prob_pred_train = calculate_calibration(
+        y_train, y_train_proba, n_bins
+    )
+    prob_true_test, prob_pred_test = calculate_calibration(
+        y_test,
+        y_test_proba,
+        n_bins
+    )
 
     plt.figure(figsize=(8, 8))
     plt.plot([0, 1], [0, 1], 'k--', label='Perfectly calibrated')
@@ -167,7 +205,7 @@ def plot_calibration_curve(model, X_train, y_train, X_test, y_test, n_bins=10):
     plt.title('Calibration Curve')
     plt.legend()
     plt.grid(True)
-    plt.savefig(f'catboost_calibration_curve.png')
+    plt.savefig('catboost_calibration_curve.png')
     plt.show()
 
 
@@ -180,10 +218,10 @@ def plot_learning_curves(model, X_train, y_train, X_test, y_test, cv=5):
 
     # Calculate learning curves
     train_sizes, train_scores, test_scores = learning_curve(
-        model, X_train, y_train, 
-        cv=cv, 
+        model, X_train, y_train,
+        cv=cv,
         train_sizes=np.linspace(0.1, 1.0, 10),
-        scoring='accuracy', 
+        scoring='accuracy',
         random_state=42
     )
 
@@ -194,17 +232,26 @@ def plot_learning_curves(model, X_train, y_train, X_test, y_test, cv=5):
 
     plt.figure(figsize=(10, 6))
     plt.plot(train_sizes, train_mean, label='Training score')
-    plt.fill_between(train_sizes, train_mean - train_std, train_mean + train_std, alpha=0.1)
+    plt.fill_between(
+        train_sizes,
+        train_mean - train_std,
+        train_mean + train_std,
+        alpha=0.1
+    )
     plt.plot(train_sizes, test_mean, label='Cross-validation score')
-    plt.fill_between(train_sizes, test_mean - test_std, test_mean + test_std, alpha=0.1)
+    plt.fill_between(
+        train_sizes,
+        test_mean - test_std,
+        test_mean + test_std,
+        alpha=0.1
+    )
     plt.xlabel('Training examples')
     plt.ylabel('Accuracy')
     plt.title('Learning Curves')
     plt.legend()
     plt.grid(True)
-    plt.savefig(f'catboost_learning_curve.png')
+    plt.savefig('catboost_learning_curve.png')
     plt.show()
-    
 
 
 def run_full_analysis(model, X_train, y_train, X_test, y_test, feature_names):
@@ -217,7 +264,9 @@ def run_full_analysis(model, X_train, y_train, X_test, y_test, feature_names):
     print(importance_df.head(10))
 
     print("\n2. Permutation Importance")
-    perm_importance_df = plot_permutation_importance(model, X_test, y_test, feature_names)
+    perm_importance_df = plot_permutation_importance(
+        model, X_test, y_test, feature_names
+    )
     print(perm_importance_df.head(10))
 
     print("\n3. Model Calibration")
@@ -228,8 +277,14 @@ def run_full_analysis(model, X_train, y_train, X_test, y_test, feature_names):
 
     print("\n5. Partial Dependence Plots for top features")
     for idx in importance_df.head(5).index:
-        feature_idx = list(feature_names).index(importance_df.iloc[idx]['Feature'])
-        plot_partial_dependence(model, X_train.values, feature_names, feature_idx)
+        feature = importance_df.iloc[idx]['Feature']
+        feature_idx = list(feature_names).index(feature)
+        plot_partial_dependence(
+            model,
+            X_train.values,
+            feature_names,
+            feature_idx
+        )
 
     print("\n6. SHAP Analysis")
     plot_shap_values(model, X_train, feature_names)
