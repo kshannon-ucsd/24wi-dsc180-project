@@ -7,6 +7,19 @@ __pycache__/
 # C extensions
 *.so
 
+# CSV files
+*.csv
+
+# Images
+*.png
+*.jpg
+*.dcm
+*.jpeg
+
+*.dicom
+
+catboost_info/
+
 # Distribution / packaging
 .Python
 build/
@@ -175,12 +188,7 @@ cython_debug/
 # Data files and directories
 data/raw/
 data/preprocessed/
-*.csv
-*.dcm
 
 # Model outputs
 output/
 *.h5
-
-# OS generated files
-.DS_Store
